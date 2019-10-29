@@ -1,0 +1,27 @@
+version: '2'
+
+services:
+    cmppproxy:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        ports:
+            - "8080:8080"
+        environment:
+            - GODEBUG=gctrace=1
+            - TZ=Asia/Shanghai
+            - DEBUG=1
+            - PORT=8080
+            - REPORT_CALLBACK_URL=http://httpbin.org/post
+            - REPLY_CALLBACK_URL=http://httpbin.org/post
+            - SEND_TIMEOUT=3s
+            - CHANNEL_NAME=test
+            - CMPP_SERVER_ADDR=127.0.0.1:7890
+            - CMPP_ACCOUNT=000422
+            - CMPP_PASSWORD=000630
+            - CMPP_ENTERPRISE_CODE=999
+            - CMPP_SERVICE_CODE=9999
+            - REPORT_WORKER_COUNT=20
+            - REPLY_WORKER_COUNT=5
+        container_name: cmppproxy
