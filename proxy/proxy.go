@@ -16,30 +16,30 @@ import (
 
 // Proxy defines the basic fields to expose to callers
 type Proxy struct {
-	ID          string
-	Account     string
-	Password    string
-	ServerAddr  string
-	SourceID    string
-	ServiceID   string
-	CMPPVersion string
-	OnReport    func(cmppclient.DeliveryReport)
-	OnReply     func(cmppclient.Reply)
+	ID             string
+	Account        string
+	Password       string
+	ServerAddr     string
+	EnterpriseCode string
+	ServiceCode    string
+	CMPPVersion    string
+	OnReport       func(cmppclient.DeliveryReport)
+	OnReply        func(cmppclient.Reply)
 
 	client *cmppclient.CMPPClient
 	once   sync.Once
 }
 
 // New creates a new Proxy instance
-func New(id, serverAddr, account, password, sourceID, serviceID, cmppVersion string) *Proxy {
+func New(id, serverAddr, account, password, enterpriseCode, serviceCode, cmppVersion string) *Proxy {
 	c := Proxy{
-		ID:          id,
-		Account:     account,
-		Password:    password,
-		ServerAddr:  serverAddr,
-		SourceID:    sourceID,
-		ServiceID:   serviceID,
-		CMPPVersion: cmppVersion,
+		ID:             id,
+		Account:        account,
+		Password:       password,
+		ServerAddr:     serverAddr,
+		EnterpriseCode: enterpriseCode,
+		ServiceCode:    serviceCode,
+		CMPPVersion:    cmppVersion,
 	}
 	c.OnReport = func(report cmppclient.DeliveryReport) {
 		mobile := report.DestTerminalID
@@ -59,8 +59,8 @@ func New(id, serverAddr, account, password, sourceID, serviceID, cmppVersion str
 		mobile := reply.SrcTerminalID
 		content := reply.Content
 		recvTime := int32(time.Now().Unix())
-		extensionNO := strings.TrimPrefix(reply.DestID, sourceID)
-		log.Infof("received reply with message id: %v, mobile: %s, content: %v, source id: %v", reply.MessageID, mobile, content, sourceID)
+		extensionNO := strings.TrimPrefix(reply.DestID, enterpriseCode)
+		log.Infof("received reply with message id: %v, mobile: %s, content: %v, source id: %v", reply.MessageID, mobile, content, enterpriseCode)
 		callback.ReplyChannel <- callback.Reply{
 			MessageID:   messageID,
 			Mobile:      mobile,
@@ -74,8 +74,8 @@ func New(id, serverAddr, account, password, sourceID, serviceID, cmppVersion str
 
 // Send is the module's entry method
 func (c *Proxy) Send(mobile string, content string, extensionNO string, timeout time.Duration) (int, string, error) {
-	sourceID := c.SourceID + extensionNO
-	return c.sendRequest(c.ServerAddr, c.Account, c.Password, mobile, content, sourceID, c.ServiceID, timeout)
+	enterpriseCode := c.EnterpriseCode + extensionNO
+	return c.sendRequest(c.ServerAddr, c.Account, c.Password, mobile, content, enterpriseCode, c.ServiceCode, timeout)
 }
 
 // InitIfNeeded initializes the client instance if it hasn't been initialized yet, and returns it
@@ -106,7 +106,7 @@ func calculateSmsCount(content string) int {
 	return int(math.Ceil(float64(count) / 67))
 }
 
-func (c *Proxy) sendRequest(api, account, password, mobile, content, sourceID, serviceID string, timeout time.Duration) (int, string, error) {
+func (c *Proxy) sendRequest(api, account, password, mobile, content, enterpriseCode, serviceCode string, timeout time.Duration) (int, string, error) {
 	if timeout < 0 {
 		timeout = time.Second * 30
 	}
@@ -123,7 +123,7 @@ func (c *Proxy) sendRequest(api, account, password, mobile, content, sourceID, s
 			MessagID: messageID,
 			Code:     code}
 	}
-	client.SendMessage(mobile, content, sourceID, serviceID, time.Now().Add(timeout), callback)
+	client.SendMessage(mobile, content, enterpriseCode, serviceCode, time.Now().Add(timeout), callback)
 
 	select {
 	case result := <-done:

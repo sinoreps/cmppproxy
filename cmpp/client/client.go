@@ -21,12 +21,12 @@ import (
 
 // Message is the model containing basic information to send an sms
 type Message struct {
-	Mobile      string
-	Content     string
-	SourceID    string
-	ServiceID   string
-	ValidBefore time.Time
-	OnResult    func(error, uint64, uint8)
+	Mobile         string
+	Content        string
+	EnterpriseCode string
+	ServiceCode    string
+	ValidBefore    time.Time
+	OnResult       func(error, uint64, uint8)
 }
 
 // Credentials specify the credentials used for login
@@ -200,7 +200,7 @@ func (m *CMPPClient) Logout() error {
 	return nil
 }
 
-// TpUdhiSeq tpUdhiHeader 序列
+// TpUdhiSeq tpUdhiHeader seq
 var TpUdhiSeq byte = 0x00
 
 func (m *CMPPClient) splitLongSms(content string) [][]byte {
@@ -238,7 +238,6 @@ func (m *CMPPClient) splitLongSms(content string) [][]byte {
 
 func (m *CMPPClient) messageToPackets(message *Message) []*cmpp.Cmpp2SubmitReqPkt {
 	packets := make([]*cmpp.Cmpp2SubmitReqPkt, 0)
-	// fixme:
 	content, err := cmpputils.Utf8ToUcs2(message.Content)
 	if err != nil {
 		log.With("ID", m.ID).Error("messageToPackets error, ", err)
@@ -255,7 +254,7 @@ func (m *CMPPClient) messageToPackets(message *Message) []*cmpp.Cmpp2SubmitReqPk
 			PkNumber:           uint8(i + 1),
 			RegisteredDelivery: 1,
 			MsgLevel:           1,
-			ServiceId:          message.ServiceID,
+			ServiceId:          message.ServiceCode,
 			FeeUserType:        2,
 			TpUdhi:             tpUdhi,
 			FeeTerminalId:      message.Mobile,
@@ -263,14 +262,13 @@ func (m *CMPPClient) messageToPackets(message *Message) []*cmpp.Cmpp2SubmitReqPk
 			MsgSrc:             "900001",
 			FeeType:            "02",
 			FeeCode:            "10",
-			// FIXME:
-			ValidTime:      "151105131555101+",
-			AtTime:         "",
-			SrcId:          message.SourceID,
-			DestUsrTl:      1,
-			DestTerminalId: []string{message.Mobile},
-			MsgLength:      uint8(len(chunk)),
-			MsgContent:     string(chunk),
+			ValidTime:          "151105131555101+",
+			AtTime:             "",
+			SrcId:              message.EnterpriseCode,
+			DestUsrTl:          1,
+			DestTerminalId:     []string{message.Mobile},
+			MsgLength:          uint8(len(chunk)),
+			MsgContent:         string(chunk),
 		}
 		packets = append(packets, p)
 	}
@@ -356,17 +354,17 @@ func (m *CMPPClient) Sender(id int) {
 }
 
 // SendMessage enqueue the message to the message channel
-func (m *CMPPClient) SendMessage(mobile, content, sourceID, serviceID string, validBefore time.Time, callback func(error, uint64, uint8)) {
+func (m *CMPPClient) SendMessage(mobile, content, enterpriseCode, serviceCode string, validBefore time.Time, callback func(error, uint64, uint8)) {
 	if !m.Connected {
 		log.With("ID", m.ID).Error("cmpp server not connected")
 		go callback(errors.New("cmpp server not connected"), 0, 0)
 	}
 	message := Message{
-		Mobile:      mobile,
-		Content:     content,
-		SourceID:    sourceID,
-		ServiceID:   serviceID,
-		ValidBefore: validBefore,
+		Mobile:         mobile,
+		Content:        content,
+		EnterpriseCode: enterpriseCode,
+		ServiceCode:    serviceCode,
+		ValidBefore:    validBefore,
 		OnResult: func(err error, msgId uint64, code uint8) {
 			if callback != nil {
 				callback(err, msgId, code)
@@ -388,8 +386,6 @@ func (m *CMPPClient) processPacket(packet interface{}) error {
 	switch p := packet.(type) {
 	case *cmpp.Cmpp2SubmitRspPkt:
 		log.With("ID", m.ID).Debugf("processPacket: received a cmpp2 submit response: %v.", p)
-		// 扣费
-		// 回调
 		seq := p.SeqId
 		key := digestString(strconv.Itoa(int(seq)))
 		item := m.MsgCache.Get(key)
@@ -496,7 +492,6 @@ func (m *CMPPClient) processPacket(packet interface{}) error {
 			return err
 		}
 		m.Client.Disconnect()
-		// onTerminate(p)
 	case *cmpp.CmppTerminateRspPkt:
 		log.With("ID", m.ID).Debugf("processPacket, received a cmpp termination response: %v.", p)
 	}
@@ -527,7 +522,6 @@ func (m *CMPPClient) KeepAlive(id int) {
 				} else {
 					log.With("ID", m.ID).Warn("KeepAlive, timeout")
 					m.ReconnectChan <- id
-					// m.login(true)
 				}
 			}
 		}

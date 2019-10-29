@@ -21,19 +21,19 @@ import (
 
 // Config contains configs for the app
 type Config struct {
-	AppName           string        `env:"APP_NAME" envDefault:"CMPPProxy"`
-	CMPPAccount       string        `env:"CMPP_ACCOUNT"`
-	CMPPPassword      string        `env:"CMPP_PASSWORD"`
-	CMPPServerAddr    string        `env:"CMPP_SERVER_ADDR"`
-	CMPPVersion       string        `env:"CMPP_VERSION" envDefault:"2.1"`
-	CMPPSourceID      string        `env:"CMPP_SOURCE_ID"`
-	CMPPServiceID     string        `env:"CMPP_SERVICE_ID"`
-	Port              int           `env:"PORT" envDefault:"8080"`
-	SendTimeout       time.Duration `env:"SEND_TIMEOUT"  envDefault:"30s"`
-	ReportWorkerCount int           `env:"REPORT_WORKER_COUNT" envDefault:"20"`
-	ReportCallbackURL string        `env:"REPORT_CALLBACK_URL"`
-	ReplyWorkerCount  int           `env:"REPLY_WORKER_COUNT" envDefault:"5"`
-	ReplyCallbackURL  string        `env:"REPLY_CALLBACK_URL"`
+	AppName            string        `env:"APP_NAME" envDefault:"CMPPProxy"`
+	CMPPAccount        string        `env:"CMPP_ACCOUNT"`
+	CMPPPassword       string        `env:"CMPP_PASSWORD"`
+	CMPPServerAddr     string        `env:"CMPP_SERVER_ADDR"`
+	CMPPVersion        string        `env:"CMPP_VERSION" envDefault:"2.1"`
+	CMPPEnterpriseCode string        `env:"CMPP_ENTERPRISE_CODE"`
+	CMPPServiceCode    string        `env:"CMPP_SERVICE_CODE"`
+	Port               int           `env:"PORT" envDefault:"8080"`
+	SendTimeout        time.Duration `env:"SEND_TIMEOUT" envDefault:"30s"`
+	ReportWorkerCount  int           `env:"REPORT_WORKER_COUNT" envDefault:"20"`
+	ReportCallbackURL  string        `env:"REPORT_CALLBACK_URL"`
+	ReplyWorkerCount   int           `env:"REPLY_WORKER_COUNT" envDefault:"5"`
+	ReplyCallbackURL   string        `env:"REPLY_CALLBACK_URL"`
 }
 
 // AppConfig holds the app config
@@ -189,8 +189,8 @@ func main() {
 		cfg.CMPPServerAddr,
 		cfg.CMPPAccount,
 		cfg.CMPPPassword,
-		cfg.CMPPSourceID,
-		cfg.CMPPServiceID,
+		cfg.CMPPEnterpriseCode,
+		cfg.CMPPServiceCode,
 		cfg.CMPPVersion,
 	)
 	CMPPProxy.InitIfNeeded()
